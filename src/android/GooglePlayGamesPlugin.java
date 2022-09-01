@@ -305,7 +305,7 @@ public class GooglePlayGamesPlugin extends CordovaPlugin {
                                             String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
                                             result.put("iconImageBase64", "data:image/png;base64, " + encoded);
                                         }
-                                    }, Objects.requireNonNull(playerBuffer.get(i).getIconImageUri()));
+                                    }, Objects.requireNonNull(mTask.getResult().getIconImageUri()));
                                     
                                     callbackContext.success(result);
                                 } catch (JSONException err) {
