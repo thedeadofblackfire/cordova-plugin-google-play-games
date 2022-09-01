@@ -303,7 +303,11 @@ public class GooglePlayGamesPlugin extends CordovaPlugin {
                                             bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
                                             byte[] byteArray = byteArrayOutputStream.toByteArray();
                                             String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                                            result.put("iconImageBase64", "data:image/png;base64, " + encoded);
+                                            try {
+                                                result.put("iconImageBase64", "data:image/png;base64, " + encoded);
+                                            } catch (Exception e) {
+                                                Log.e(TAG, "Error while getting base64 for user");
+                                            }
                                         }
                                     }, Objects.requireNonNull(mTask.getResult().getIconImageUri()));
                                     
