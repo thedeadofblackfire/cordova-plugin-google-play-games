@@ -294,7 +294,19 @@ public class GooglePlayGamesPlugin extends CordovaPlugin {
                                     result.put("title", mTask.getResult().getTitle());
                                     result.put("avatar", mTask.getResult().getHiResImageUri());
                                     result.put("icon", mTask.getResult().getIconImageUri());
-                                    result.put("info", mTask.getResult().getCurrentPlayerInfo());
+                                    
+                                    ImageManager mgr = ImageManager.create(cordova.getContext());
+                                    mgr.loadImage((uri, drawable, isRequestedDrawable) -> {
+                                        if (isRequestedDrawable) {
+                                            Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                                            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+                                            byte[] byteArray = byteArrayOutputStream.toByteArray();
+                                            String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                                            result.put("iconImageBase64", "data:image/png;base64, " + encoded);
+                                        }
+                                    }, Objects.requireNonNull(playerBuffer.get(i).getIconImageUri()));
+                                    
                                     callbackContext.success(result);
                                 } catch (JSONException err) {
                                     callbackContext.error(err.getMessage());
