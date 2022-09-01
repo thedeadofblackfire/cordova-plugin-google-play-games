@@ -290,6 +290,11 @@ public class GooglePlayGamesPlugin extends CordovaPlugin {
                                 try {
                                     JSONObject result = new JSONObject();
                                     result.put("id", mTask.getResult().getPlayerId());
+                                    result.put("name", mTask.getResult().getDisplayName());
+                                    result.put("title", mTask.getResult().getTitle());
+                                    result.put("avatar", mTask.getResult().getHiResImageUri());
+                                    result.put("icon", mTask.getResult().getIconImageUri());
+                                    result.put("info", mTask.getResult().getCurrentPlayerInfo());
                                     callbackContext.success(result);
                                 } catch (JSONException err) {
                                     callbackContext.error(err.getMessage());
