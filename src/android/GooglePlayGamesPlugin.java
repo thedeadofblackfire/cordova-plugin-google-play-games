@@ -208,7 +208,6 @@ public class GooglePlayGamesPlugin extends CordovaPlugin {
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         cordovaWebView = webView;
         super.initialize(cordova, webView);
-        PlayGamesSdk.initialize(cordova.getActivity());
     }
 
     /** ----------------------- UTILS --------------------------- */
@@ -276,6 +275,8 @@ public class GooglePlayGamesPlugin extends CordovaPlugin {
      * Login
      */
     private void loginAction(JSONArray args, final CallbackContext callbackContext) {
+        PlayGamesSdk.initialize(cordova.getActivity());
+        
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
                 GamesSignInClient gamesSignInClient = PlayGames.getGamesSignInClient(cordova.getActivity());
