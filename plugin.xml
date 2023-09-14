@@ -18,6 +18,7 @@
     </engines>
 
     <platform name="android">
+        <preference name="APP_ID" />
 
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="GooglePlayGamesPlugin">
@@ -33,7 +34,16 @@
             <meta-data android:name="com.google.android.gms.version"
                        android:value="@integer/google_play_services_version" />
 
+        </config-file>
 
+        <config-file target="res/values/strings.xml" parent="/resources">
+            <string name="app_id">$APP_ID</string>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <meta-data
+              android:name="com.google.android.gms.games.APP_ID"
+              android:value="@string/app_id" />
         </config-file>
 
         <source-file src="src/android/GooglePlayGamesPlugin.java"
