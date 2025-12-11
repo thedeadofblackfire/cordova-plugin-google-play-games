@@ -290,7 +290,32 @@ public class GooglePlayGamesPlugin extends CordovaPlugin {
                                 try {
                                     JSONObject result = new JSONObject();
                                     result.put("id", mTask.getResult().getPlayerId());
-                                    callbackContext.success(result);
+                                    result.put("name", mTask.getResult().getDisplayName());
+                                    result.put("title", mTask.getResult().getTitle());
+                                    result.put("avatar", mTask.getResult().getHiResImageUri());
+                                    result.put("icon", mTask.getResult().getIconImageUri());
+
+                                    if (mTask.getResult().hasIconImage()) {
+                                        ImageManager mgr = ImageManager.create(cordova.getContext());
+                                        mgr.loadImage((uri, drawable, isRequestedDrawable) -> {
+                                            if (isRequestedDrawable) {
+                                                Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                                                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+                                                byte[] byteArray = byteArrayOutputStream.toByteArray();
+                                                String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+                                                try {
+                                                    result.put("iconImageBase64", "data:image/png;base64, " + encoded);
+                                                } catch (Exception e) {
+                                                    Log.e(TAG, "Error while getting base64 for user");
+                                                } finally {
+                                                    callbackContext.success(result);
+                                                }
+                                            }
+                                        }, Objects.requireNonNull(mTask.getResult().getIconImageUri()));
+                                    } else {
+                                        callbackContext.success(result);
+                                    }
                                 } catch (JSONException err) {
                                     callbackContext.error(err.getMessage());
                                 }
