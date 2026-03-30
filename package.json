@@ -1,21 +1,51 @@
 {
-  "name": "cordova-plugin-google-play-games",
-  "version": "1.4.5",
-  "description": "Cordova plugin to work with Google Play Games services",
-  "main": "./www/googleplaygames.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/maximnara/cordova-plugin-google-play-games.git"
-  },
+  "name": "capacitor-google-play-games",
+  "version": "2.0.0",
+  "description": "Capacitor plugin for Google Play Games services",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "unpkg": "dist/plugin.js",
+  "files": [
+    "android/src/main/",
+    "android/build.gradle",
+    "dist/",
+    "src/"
+  ],
   "keywords": [
-    "cordova",
-    "ecosystem:cordova",
-    "cordova-android"
+    "capacitor",
+    "plugin",
+    "google-play-games",
+    "android",
+    "leaderboards",
+    "achievements",
+    "game-saves"
   ],
   "author": "Maksim Luzhkov",
   "license": "MIT",
+  "devDependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "typescript": "~5.4.0"
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=3.0.0"
+  },
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "verify:android": "cd android && ./gradlew clean build test && cd .."
+  },
   "bugs": {
     "url": "https://github.com/maximnara/cordova-plugin-google-play-games/issues"
   },
-  "homepage": "https://github.com/maximnara/cordova-plugin-google-play-games"
+  "homepage": "https://github.com/maximnara/cordova-plugin-google-play-games",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maximnara/cordova-plugin-google-play-games.git"
+  }
 }

@@ -1,389 +1,203 @@
-# Google Play Games services for Ionic and Cordova apps.
-You can login, make game saves, have leaderboard and achievements.
-## Demos:
-- [Leaderboard Demo Video](https://drive.google.com/file/d/1F-UGff5QaxCH72_c7DEqMqIWonb221g-/view?usp=sharing)
-- [Achievements Demo Video](https://drive.google.com/file/d/1Ey5ZkDWz-bduMlXoPr5NgKCwxy9VnVaK/view?usp=sharing)
-- [Game Saves Demo Video](https://drive.google.com/file/d/1F0YhgkF81IvN3d_N2-ezjhxEJN8xy34X/view?usp=sharing)
+# capacitor-google-play-games
 
---------
-
-## Table of Contents
-
-- [State of Development](#state-of-development)
-- [Install](#install)
-- [Usage](#usage)
-
+Google Play Games services for Capacitor apps (Android). Supports sign-in, achievements, leaderboards, game saves, friends, player stats, and events.
 
 ## State of Development
-- [x] <img src="https://img.shields.io/badge/-Complete-brightgreen.svg?label=Sign%20In%20Support&style=flat-square">
-- [x] <img src="https://img.shields.io/badge/-Complete-brightgreen.svg?label=Achievements%20Support&style=flat-square">
-- [x] <img src="https://img.shields.io/badge/-Complete-brightgreen.svg?label=Leaderboards%20Support&style=flat-square">
-- [x] <img src="https://img.shields.io/badge/-Complete-brightgreen.svg?label=Game%20Savings%20Support&style=flat-square">
-- [x] <img src="https://img.shields.io/badge/-Complete-brightgreen.svg?label=Friends%20Support&style=flat-square">
-- [x] <img src="https://img.shields.io/badge/-Complete-brightgreen.svg?label=Player%20Stats%20Support&style=flat-square">
-- [x] <img src="https://img.shields.io/badge/-Complete-brightgreen.svg?label=Events%20Support&style=flat-square">
-- [ ] <img src="https://img.shields.io/badge/-In%20Development-yellow.svg?label=Anti-Piracy%20Support&style=flat-square">
 
--------- 
+- [x] Sign In
+- [x] Achievements
+- [x] Leaderboards
+- [x] Game Saves
+- [x] Friends
+- [x] Player Stats
+- [x] Events
+
+---
 
 ## Install
 
 ```bash
-npm i cordova-plugin-google-play-games --save
+npm install capacitor-google-play-games
+npx cap sync
 ```
 
-You should add few lines in AndroidManifest.xml (app/src/main/res/AndroidManifest.xml) in application tag
-```
-<meta-data android:name="com.google.android.gms.games.APP_ID" android:value="@string/app_id" />
-<meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version"/>
+---
+
+## Android Setup
+
+### 1. Register the plugin in `MainActivity.java`
+
+```java
+import io.luzh.capacitor.plugin.GooglePlayGames;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(GooglePlayGames.class);
+        super.onCreate(savedInstanceState);
+    }
+}
 ```
 
-And in strings.xml (app/src/main/res/values/strings.xml):
-```
-<string name="app_id">999999999999</string>
+### 2. Add your App ID to `android/app/src/main/res/values/strings.xml`
+
+```xml
+<string name="app_id">YOUR_APP_ID_HERE</string>
 ```
 
--------- 
+Replace `YOUR_APP_ID_HERE` with the numeric App ID from the Google Play Console
+(found under **Play Games Services > Configuration**).
+
+### 3. Add metadata to `android/app/src/main/AndroidManifest.xml`
+
+Inside the `<application>` tag:
+
+```xml
+<meta-data
+    android:name="com.google.android.gms.games.APP_ID"
+    android:value="@string/app_id" />
+<meta-data
+    android:name="com.google.android.gms.version"
+    android:value="@integer/google_play_services_version" />
+```
+
+---
+
 ## Usage
 
-- [Sign In](#sign-in)
-- [Achievements](#achievements)
-  - [Unlock achievement](#unlock-achievement)
-  - [Increment achievement](#increment-achievement)
-  - [Show achievements](#show-achievements)
-  - [Reveal achievement](#reveal-achievement)
-  - [Set steps in achievement](#set-steps-in-achievement)
-- [Leaderboards](#leaderboards)
-  - [Update player score](#update-player-score)
-  - [Load player score](#load-player-score)
-  - [Show leaderboard](#show-leaderboard)
-  - [Show all leaderboards](#show-all-leaderboards)
-- [Game Savings](#game-savings)
-  - [Save game](#save-game)
-  - [Load game save](#load-game-save)
-  - [Show saved games](#show-saved-games)
-  - [Saved Games Events](#saved-games-events)
-- [Friends](#friends)
-  - [Get friend list](#get-friend-list)
-  - [Show another players profile](#show-another-players-profile)
-- [Players](#players) 
-  - [Player stats](#player-stats)
-  - [Player search](#player-search)
-  - [Get player](#get-player)
-- [Events](#events)
-  - [Increment event](#increment-event)
-  - [Get all events](#get-all-events)
-  - [Get event by id](#get-event-by-id)
-  
-  
-This library is Promise style, you can use .then or await to fetch results
+```typescript
+import { GooglePlayGames } from 'capacitor-google-play-games';
+```
 
 ### Sign In
 
-```javascript
-import * as GooglePlayGames from 'cordova-plugin-google-play-games';
-let { id } = await GooglePlayGames.login(); // userId returned
+```typescript
+const player = await GooglePlayGames.login();
+// player.id, player.name, player.title, player.iconImageBase64 ...
 ```
-***
+
+---
+
 ### Achievements
 
-#### Unlock achievement
+```typescript
+await GooglePlayGames.unlockAchievement({ id: 'achievement-id' });
 
-```javascript
-await GooglePlayGames.unlockAchievement({ id: 'your-id-from-google-play-console' });
+await GooglePlayGames.incrementAchievement({ id: 'achievement-id', count: 1 });
+
+await GooglePlayGames.revealAchievement({ id: 'achievement-id' });
+
+await GooglePlayGames.setStepsInAchievement({ id: 'achievement-id', count: 3 });
+
+await GooglePlayGames.showAchievements(); // native UI
 ```
 
-#### Increment achievement
-
-```javascript
-await GooglePlayGames.incrementAchievement({ id: 'your-id', count: 1 }); // Count is how much increment achievement
-```
-
-#### Show achievements
-This method is show native Google Games UI 
-```javascript
-await GooglePlayGames.showAchievements();
-```
-
-#### Reveal achievement
-Reveals a hidden achievement to the currently signed-in player. If the achievement has already been unlocked, this will have no effect.
-```javascript
-await GooglePlayGames.revealAchievement({ id: 'your-id-from-console' })
-```
-
-#### Set steps in achievement
-Sets an achievement to have at least the given number of steps completed for current user. Calling this method while the achievement already has more steps than the provided value is a no-op. Once the achievement reaches the maximum number of steps, the achievement will automatically be unlocked, and any further mutation operations will be ignored.
-```javascript
-await GooglePlayGames.setStepsInAchievement({ id: 'your-id-from-console', count: 3 })
-```
-***
+---
 
 ### Leaderboards
 
-#### Update player score
-This method updates player score in specified leaderboard
-```javascript
-await GooglePlayGames.updatePlayerScore({ id: 'your-leaderboard-id-from-google-play-console', score: 30 }); // Score you want to set
+```typescript
+await GooglePlayGames.updatePlayerScore({ id: 'leaderboard-id', score: 9999 });
+
+const { score } = await GooglePlayGames.loadPlayerScore({ id: 'leaderboard-id' });
+
+await GooglePlayGames.showLeaderboard({ id: 'leaderboard-id' }); // native UI
+
+await GooglePlayGames.showAllLeaderboards(); // native UI
 ```
 
-#### Load player score
+---
 
-```javascript
-const { score } = await GooglePlayGames.loadPlayerScore({ id: 'your-leaderboard-id' });
-```
+### Game Saves
 
-#### Show leaderboard
-This method is show native Google Games UI
-```javascript
-await GooglePlayGames.showLeaderboard({ id: 'your-leaderboard-id' });
-```
-
-#### Show all leaderboards
-This method opens native window of all leaderboards list.
-```javascript
-await GooglePlayGames.showAllLeaderboards();
-```
-***
-
-### Game Savings
-
-#### Save game
-```javascript
+```typescript
 await GooglePlayGames.saveGame({
-  snapshotName: 'unique-id-this-for-save',
-  snapshotDescription: 'ANY NAME YOU WANT',
-  snapshotContents: { any: 'data', format: 'object' }
+  snapshotName: 'slot-1',
+  snapshotDescription: 'Chapter 3',
+  snapshotContents: { level: 3, score: 500 },
 });
-```
-***
-#### Load game save
 
-```javascript
-let data = await GooglePlayGames.loadGameSave({ snapshotName: 'unique-id-this-for-save' });
-// Data will contain { any: 'data', format: 'object' }
-```
-***
-#### Show saved games
-This method is show native Google Games UI
-```javascript
+const data = await GooglePlayGames.loadGameSave({ snapshotName: 'slot-1' });
+// data = { level: 3, score: 500 }
+
 await GooglePlayGames.showSavedGames({
-  /**
-   * This is title for native UI window
-   */
-  title: 'My saved games 777',
-  /**
-   * Whether or not to display a "create new snapshot" option.
-   * After clicking on add button event will be fired.
-   */
+  title: 'My Saves',
   allowAddButton: true,
-  /**
-   * Whether or not to provide a delete overflow menu option for each snapshot. 
-   * After clicking on add button event will be fired.
-   */
   allowDelete: true,
-  /**
-   * The maximum number of snapshots to display in native UI
-   */
-  maxSnapshots: 3,
+  maxSnapshots: 5,
 });
 ```
 
-#### Saved Games Events
+#### Game Save Events
 
-All events called after user clicks some button from native Google Games UI.   
-Example: he can ask to create new game saving or set game progress to specified save id. 
+Listen for user interactions with the native saved-games UI:
 
-**Load Game Request**
-
-User requested to set his progress on some specified save id.
-```javascript
-window.addEventListener("loadSavedGameRequest", async (event) => {
-  console.log('User requested to set his progress on save id: ', event.id)
+```typescript
+GooglePlayGames.addListener('loadSavedGameRequest', (event) => {
+  // user tapped a save — load it
+  GooglePlayGames.loadGameSave({ snapshotName: event.id });
 });
-```
-**New Game Save Request**
 
-User requested game to created new Saving. No data passed here.
-```javascript
-window.addEventListener("saveGameRequest", async () => {
-  
+GooglePlayGames.addListener('saveGameRequest', () => {
+  // user tapped "new save"
 });
-```
-**Save Game Conflict**
 
-Some conflict happened when trying to save game.  
-I think this is not common used event, but think it should exist.
-```javascript
-window.addEventListener("saveGameConflict", async (event) => {
-  console.log('Conflicting id is: ', event.conflictId)
+GooglePlayGames.addListener('saveGameConflict', (event) => {
+  console.log('Conflict ID:', event.conflictId);
 });
 ```
 
-***
+---
 
 ### Friends
 
-#### Get friend list
-This method will return array of users objects. Inside objects all available info.
-Method can 
-```javascript
-window.addEventListener("friendsListRequestSuccessful", async () => {
-  try {
-    let list = await GooglePlayGames.getFriendsList();
-  } catch (e) {
-    console.log('No resolution')
-  }
-});
-
+```typescript
 try {
-  let list = await GooglePlayGames.getFriendsList(); 
-} catch (e) {
-  const ERROR_CODE_HAS_RESOLUTION = 1;
-  const ERROR_CODE_NO_RESOLUTION = 2;
-  if (e.code === ERROR_CODE_HAS_RESOLUTION) {
-    // That's all right, user will be asked for Friends permission
-    // After he give access event "friendsListRequestSuccessful" will be fired.
-  } else if (e.code === ERROR_CODE_NO_RESOLUTION) {
-    console.log('No resolution: ' + e.message);
+  const { friends } = await GooglePlayGames.getFriendsList();
+} catch (e: any) {
+  if (e.data?.code === 1) {
+    // Permission dialog shown — retry after the event fires
+    GooglePlayGames.addListener('friendsListRequestSuccessful', async () => {
+      const { friends } = await GooglePlayGames.getFriendsList();
+    });
   }
 }
 ```
-```json
-[
-  {
-    "id":"a_99999",
-    "name":"Maxim L.",
-    "title":"Летчик-ас",
-    "retrievedTimestamp":1658298688691,
-    // If you have idea how to deal with content:// URI you can use it
-    "bannerImageLandscapeUri":"content://com.google.android.gms.games.background/images/a19ec21b/1005",
-    "bannerImagePortraitUri":"content://com.google.android.gms.games.background/images/a19ec21b/1006",
-    "iconImageUri":"content://com.google.android.gms.games.background/images/a19ec21b/1003",
-    "hiResImageUri":"content://com.google.android.gms.games.background/images/a19ec21b/1004",
-    "levelInfo": {
-      "currentLevel":11,
-      "maxXp":90000,
-      "minXp":70000,
-      "hashCode":2300362
-    },
-    "friendStatus":4, // Have no idea what is that yet
-    // Use that to show user pic in <img> tag
-    "iconImageBase64":"data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAA..." 
-  }
-]
-```
-***
 
-#### Show another players profile
-This method will show standard Play Games menu with user info.
-```javascript
-await GooglePlayGames.showAnotherPlayersProfile({ id: result[0].id });
-```
-***
+Each friend object matches the `PlayerInfo` interface (id, name, title, iconImageBase64, etc.).
 
-### Players
+```typescript
+await GooglePlayGames.showAnotherPlayersProfile({ id: 'player-id' });
 
-#### Player stats
-This method will resolve 6 available current player stats:  
-
-— Average session length: The average session length of the player in minutes. Session length is determined by the time that a player is signed in to Google Play Games services.   
-— Days since last played: The approximate number of days since the player last played.  
-— Number of purchases: The approximate number of in-app purchases for the player.  
-— Number of sessions: The approximate number of sessions of the player. Sessions are determined by the number of times that a player signs in to Google Play Games services.  
-— Session percentile: The approximation of sessions percentile for the player, given as a decimal value between 0 to 1 inclusive. This value indicates how many sessions the current player has played in comparison to the rest of this game's player base. Higher numbers indicate that this player has played more sessions.  
-— Spend percentile: The approximate spend percentile of the player, given as a decimal value between 0 to 1 inclusive. This value indicates how much the current player has spent in comparison to the rest of this game's player base. Higher numbers indicate that this player has spent more.  
-```javascript
-let stats = await GooglePlayGames.getCurrentPlayerStats();
-
-if (stats.daysSinceLastPlayed > 7) {
-  console.log("It's been longer than a week");
-}
-if (stats.numberOfSessions > 1000) {
-  console.log("Veteran player");
-}
-if (stats.numberOfPurchases == 0) {
-  console.log("Show user special offer");
-}
-```
-***
-
-#### Player search
-This method opens native window with player search. When user clicks on player he found player profile will be opened.
-```javascript
 await GooglePlayGames.showPlayerSearch();
 ```
 
-#### Get player
-This method returns player object.
-```javascript
-let player = await GooglePlayGames.getPlayer({ id: 'id-from-other-methods' });
-```
-This is demo of object will be returned:
-```json
-{
-  "id":"a_108",
-  "name":"luzhkov.max",
-  "title":"Newbie",
-  "retrievedTimestamp":1658301492400,
-  "bannerImageLandscapeUri":"content://com.google.android.gms.games.background/images/a19ec21b/1001",
-  "bannerImagePortraitUri":"content://com.google.android.gms.games.background/images/a19ec21b/1002",
-  "iconImageUri":"content://com.google.android.gms.games.background/images/a19ec21b/1000",
-  "hiResImageUri":"content://com.google.android.gms.games.background/images/a19ec21b/6",
-  "levelInfo": {
-    "currentLevel":1,
-    "maxXp":1000,
-    "minXp":0,
-    "hashCode":31752
-  },
-  "iconImageBase64":"data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAX..."
-}
-```
-***
+---
 
-### Events
-Events it is basically place where you can store some data about user: balance, level and something like this.
+### Players
 
-#### Increment event
-Value should be more than 0. Increment raw integer, money or time here. 
-```javascript
-await GooglePlayGames.incrementEvent({ id: 'id-from-play-console', amount: 10 })
+```typescript
+const player = await GooglePlayGames.getPlayer({ id: 'player-id', forceReload: false });
+
+const stats = await GooglePlayGames.getCurrentPlayerStats();
+// stats.daysSinceLastPlayed, stats.numberOfSessions, stats.spendPercentile ...
 ```
 
-#### Get all events
+---
 
-```javascript
-// Returns array of objects here, what inside object check below
-let events = await GooglePlayGames.getAllEvents();
+### Events (custom counters)
+
+```typescript
+await GooglePlayGames.incrementEvent({ id: 'event-id', amount: 10 });
+
+const { events } = await GooglePlayGames.getAllEvents();
+
+const event = await GooglePlayGames.getEvent({ id: 'event-id' });
+// event.value, event.name, event.player ...
 ```
 
-#### Get event by id
+---
 
-```javascript
-let event = await GooglePlayGames.getEvent({ id: 'id-from-play-console' });
-```
-```json
-{
-  "id":"id-from-play-console", // Id by what you can identify events in your app
-  "name":"Test event",
-  "value":1012, // This is amount you increment on previous step
-  "player": { // Some info about player you can use instantly
-      "id":"a_108",
-      "name":"luzhkov.max",
-      "title":"Newbie",
-      "retrievedTimestamp":1658301492400,
-      "bannerImageLandscapeUri":"content://com.google.android.gms.games.background/images/a19ec21b/1001",
-      "bannerImagePortraitUri":"content://com.google.android.gms.games.background/images/a19ec21b/1002",
-      "iconImageUri":"content://com.google.android.gms.games.background/images/a19ec21b/1000",
-      "hiResImageUri":"content://com.google.android.gms.games.background/images/a19ec21b/6",
-      "levelInfo": {
-        "currentLevel":1,
-        "maxXp":1000,
-        "minXp":0,
-        "hashCode":31752
-      }, 
-      "iconImageBase64":"data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAX..."
-  }
-}
-```
+## API
 
-### Feel free to make your PRs for code structure or new functions or text me in Telegram @luzhkov
+See [`src/definitions.ts`](src/definitions.ts) for the full TypeScript API including all interfaces.
