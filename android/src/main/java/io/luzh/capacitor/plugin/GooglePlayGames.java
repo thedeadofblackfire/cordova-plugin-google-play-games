@@ -74,37 +74,51 @@ public class GooglePlayGames extends Plugin {
             signInClient.isAuthenticated().addOnCompleteListener(authTask -> {
                 boolean isAuthenticated = authTask.isSuccessful()
                         && authTask.getResult().isAuthenticated();
-                if (!isAuthenticated) {
-                    call.reject("Login failed");
+                if (isAuthenticated) {
+                    resolveCurrentPlayer(call);
                     return;
                 }
-                PlayGames.getPlayersClient(getActivity()).getCurrentPlayer()
-                        .addOnCompleteListener(playerTask -> {
-                            if (!playerTask.isSuccessful() || playerTask.getResult() == null) {
-                                call.reject("Failed to get current player");
-                                return;
-                            }
-                            Player p = playerTask.getResult();
-                            JSObject result = new JSObject();
-                            result.put("id", p.getPlayerId());
-                            result.put("name", p.getDisplayName());
-                            result.put("title", p.getTitle());
-                            result.put("avatar", p.getHiResImageUri() != null ? p.getHiResImageUri().toString() : null);
-                            result.put("icon", p.getIconImageUri() != null ? p.getIconImageUri().toString() : null);
-                            if (p.hasIconImage()) {
-                                ImageManager mgr = ImageManager.create(getContext());
-                                mgr.loadImage((uri, drawable, isRequested) -> {
-                                    if (isRequested && drawable instanceof BitmapDrawable) {
-                                        result.put("iconImageBase64", "data:image/png;base64, " + bitmapToBase64((BitmapDrawable) drawable));
-                                    }
-                                    call.resolve(result);
-                                }, Objects.requireNonNull(p.getIconImageUri()));
-                            } else {
-                                call.resolve(result);
-                            }
-                        });
+                // Silent sign-in did not authenticate (e.g. SIGN_IN_REQUIRED on first
+                // run or a new account). Trigger the interactive prompt, then re-check.
+                signInClient.signIn().addOnCompleteListener(signInTask -> {
+                    boolean signedIn = signInTask.isSuccessful()
+                            && signInTask.getResult().isAuthenticated();
+                    if (!signedIn) {
+                        call.reject("Login failed");
+                        return;
+                    }
+                    resolveCurrentPlayer(call);
+                });
             });
         });
+    }
+
+    private void resolveCurrentPlayer(PluginCall call) {
+        PlayGames.getPlayersClient(getActivity()).getCurrentPlayer()
+                .addOnCompleteListener(playerTask -> {
+                    if (!playerTask.isSuccessful() || playerTask.getResult() == null) {
+                        call.reject("Failed to get current player");
+                        return;
+                    }
+                    Player p = playerTask.getResult();
+                    JSObject result = new JSObject();
+                    result.put("id", p.getPlayerId());
+                    result.put("name", p.getDisplayName());
+                    result.put("title", p.getTitle());
+                    result.put("avatar", p.getHiResImageUri() != null ? p.getHiResImageUri().toString() : null);
+                    result.put("icon", p.getIconImageUri() != null ? p.getIconImageUri().toString() : null);
+                    if (p.hasIconImage()) {
+                        ImageManager mgr = ImageManager.create(getContext());
+                        mgr.loadImage((uri, drawable, isRequested) -> {
+                            if (isRequested && drawable instanceof BitmapDrawable) {
+                                result.put("iconImageBase64", "data:image/png;base64, " + bitmapToBase64((BitmapDrawable) drawable));
+                            }
+                            call.resolve(result);
+                        }, Objects.requireNonNull(p.getIconImageUri()));
+                    } else {
+                        call.resolve(result);
+                    }
+                });
     }
 
     // ----------------------- ACHIEVEMENTS -----------------------
