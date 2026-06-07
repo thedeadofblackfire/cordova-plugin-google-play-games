@@ -25,19 +25,16 @@ npx cap sync
 
 ## Android Setup
 
-### 1. Register the plugin in `MainActivity.java`
+### 1. Sync the Capacitor Android project
 
-```java
-import io.luzh.capacitor.plugin.GooglePlayGames;
+After installing the plugin, run:
 
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(GooglePlayGames.class);
-        super.onCreate(savedInstanceState);
-    }
-}
+```bash
+npx cap sync android
 ```
+
+This plugin uses Capacitor's standard Android registration, so you do not need to
+manually register it in `MainActivity.java`.
 
 ### 2. Add your App ID to `android/app/src/main/res/values/strings.xml`
 
