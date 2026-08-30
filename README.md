@@ -73,6 +73,30 @@ const player = await GooglePlayGames.login();
 // player.id, player.name, player.title, player.iconImageBase64 ...
 ```
 
+Play Games v2 signs the player in on its own when the SDK initialises, so `login()`
+usually resolves without showing anything. When it cannot restore a session, the default
+`login()` falls back to `signIn()` — **whose resolution is the account/profile picker**.
+
+That fallback is right for a button the player just tapped, and wrong for everything
+else: background work (submitting a score, reading a snapshot at boot) that calls
+`login()` unconditionally drops that picker on the player at *every launch* for as long
+as the session cannot be restored. Two ways to stay silent:
+
+```typescript
+// Ask for the verdict, show nothing either way.
+const { isAuthenticated } = await GooglePlayGames.isAuthenticated();
+if (isAuthenticated) await GooglePlayGames.updatePlayerScore({ id: 'lb', score: 42 });
+
+// Or let login() resolve a session it already has, and refuse rather than prompt.
+try {
+  await GooglePlayGames.login({ interactive: false });
+} catch (e: any) {
+  if (e.code === 'SIGN_IN_REQUIRED') {
+    // No session and no prompt. Try again from a player-initiated surface.
+  }
+}
+```
+
 ---
 
 ### Achievements

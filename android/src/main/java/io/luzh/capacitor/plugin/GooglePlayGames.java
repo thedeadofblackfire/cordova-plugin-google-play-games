@@ -59,6 +59,8 @@ public class GooglePlayGames extends Plugin {
     private static final int SHOW_SHARING_FRIENDS_CONSENT = 1111;
     private static final int ERROR_CODE_HAS_RESOLUTION = 1;
     private static final int ERROR_CODE_NO_RESOLUTION = 2;
+    /** Rejection code of a non-interactive login() that found no session. */
+    private static final String CODE_SIGN_IN_REQUIRED = "SIGN_IN_REQUIRED";
 
     @Override
     public void load() {
@@ -67,8 +69,45 @@ public class GooglePlayGames extends Plugin {
 
     // ----------------------- AUTH -----------------------
 
+    /**
+     * Report whether Play Games has a session, WITHOUT ever showing UI.
+     *
+     * Play Games v2 signs the player in on its own when the SDK initialises. When it
+     * cannot (no account granted to this game, consent withdrawn, a previous API call
+     * invalidated the session), it reports SIGN_IN_REQUIRED with a *suppressed*
+     * resolution: deliberately no prompt. This method exposes exactly that verdict, so a
+     * caller can decide for itself whether spending an interactive prompt is warranted.
+     */
+    @PluginMethod
+    public void isAuthenticated(PluginCall call) {
+        getActivity().runOnUiThread(() ->
+            PlayGames.getGamesSignInClient(getActivity()).isAuthenticated()
+                .addOnCompleteListener(task -> {
+                    JSObject result = new JSObject();
+                    result.put("isAuthenticated", task.isSuccessful()
+                            && task.getResult().isAuthenticated());
+                    call.resolve(result);
+                }));
+    }
+
+    /**
+     * Resolve the current player, signing in first if needed.
+     *
+     * `interactive` (default true, so existing callers are unchanged) decides what
+     * happens when the silent check comes back unauthenticated:
+     *   • true  — call signIn(), whose resolution is the account/profile picker.
+     *   • false — reject with code SIGN_IN_REQUIRED and show NOTHING.
+     *
+     * ⚠️ That flag exists because signIn() is not a "try to sign in": it is a *prompt*.
+     * Background work (submitting a score, reading a snapshot at boot) that calls it
+     * unconditionally puts the picker in front of the player at every launch for as long
+     * as the session cannot be restored — which is indistinguishable, to them, from the
+     * app being broken. Anything the player did not explicitly ask for should pass
+     * interactive:false and simply do nothing when there is no session.
+     */
     @PluginMethod
     public void login(PluginCall call) {
+        boolean interactive = Boolean.TRUE.equals(call.getBoolean("interactive", true));
         getActivity().runOnUiThread(() -> {
             GamesSignInClient signInClient = PlayGames.getGamesSignInClient(getActivity());
             signInClient.isAuthenticated().addOnCompleteListener(authTask -> {
@@ -78,13 +117,17 @@ public class GooglePlayGames extends Plugin {
                     resolveCurrentPlayer(call);
                     return;
                 }
+                if (!interactive) {
+                    call.reject("Not signed in", CODE_SIGN_IN_REQUIRED);
+                    return;
+                }
                 // Silent sign-in did not authenticate (e.g. SIGN_IN_REQUIRED on first
                 // run or a new account). Trigger the interactive prompt, then re-check.
                 signInClient.signIn().addOnCompleteListener(signInTask -> {
                     boolean signedIn = signInTask.isSuccessful()
                             && signInTask.getResult().isAuthenticated();
                     if (!signedIn) {
-                        call.reject("Login failed");
+                        call.reject("Login failed", CODE_SIGN_IN_REQUIRED);
                         return;
                     }
                     resolveCurrentPlayer(call);

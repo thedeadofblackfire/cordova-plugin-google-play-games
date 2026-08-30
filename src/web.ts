@@ -2,9 +2,11 @@ import { WebPlugin } from '@capacitor/core';
 
 import type {
   AllEventsResult,
+  AuthenticationResult,
   EventResult,
   FriendsListResult,
   GooglePlayGamesPlugin,
+  LoginOptions,
   LoginResult,
   PlayerInfo,
   PlayerStatsResult,
@@ -12,7 +14,12 @@ import type {
 } from './definitions';
 
 export class GooglePlayGamesWeb extends WebPlugin implements GooglePlayGamesPlugin {
-  login(): Promise<LoginResult> {
+  // Answers rather than throwing, unlike the rest of this class: it is the question
+  // "may I use Play Games?", and on web the answer is simply no.
+  isAuthenticated(): Promise<AuthenticationResult> {
+    return Promise.resolve({ isAuthenticated: false });
+  }
+  login(_options?: LoginOptions): Promise<LoginResult> {
     throw this.unimplemented('Not available on web');
   }
   unlockAchievement(_options: { id: string }): Promise<void> {
