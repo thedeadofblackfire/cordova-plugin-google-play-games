@@ -1,21 +1,33 @@
 import { WebPlugin } from '@capacitor/core';
-import type { AllEventsResult, EventResult, FriendsListResult, GooglePlayGamesPlugin, LoginResult, PlayerInfo, PlayerStatsResult, ScoreResult } from './definitions';
+import type { AchievementInfo, AchievementsResult, AchievementWriteResult, AllEventsResult, AuthenticationResult, EventResult, FriendsListResult, GooglePlayGamesPlugin, LoginOptions, LoginResult, PlayerInfo, PlayerStatsResult, ScoreResult } from './definitions';
 export declare class GooglePlayGamesWeb extends WebPlugin implements GooglePlayGamesPlugin {
-    login(): Promise<LoginResult>;
+    isAuthenticated(): Promise<AuthenticationResult>;
+    login(_options?: LoginOptions): Promise<LoginResult>;
     unlockAchievement(_options: {
         id: string;
-    }): Promise<void>;
+        immediate?: boolean;
+    }): Promise<AchievementWriteResult>;
     incrementAchievement(_options: {
         id: string;
         count: number;
-    }): Promise<void>;
+        immediate?: boolean;
+    }): Promise<AchievementWriteResult>;
     revealAchievement(_options: {
         id: string;
+        immediate?: boolean;
     }): Promise<void>;
     setStepsInAchievement(_options: {
         id: string;
         count: number;
-    }): Promise<void>;
+        immediate?: boolean;
+    }): Promise<AchievementWriteResult>;
+    loadAchievements(_options?: {
+        forceReload?: boolean;
+    }): Promise<AchievementsResult>;
+    getAchievement(_options: {
+        id: string;
+        forceReload?: boolean;
+    }): Promise<AchievementInfo>;
     showAchievements(): Promise<void>;
     updatePlayerScore(_options: {
         id: string;

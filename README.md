@@ -104,13 +104,64 @@ try {
 ```typescript
 await GooglePlayGames.unlockAchievement({ id: 'achievement-id' });
 
-await GooglePlayGames.incrementAchievement({ id: 'achievement-id', count: 1 });
-
 await GooglePlayGames.revealAchievement({ id: 'achievement-id' });
 
-await GooglePlayGames.setStepsInAchievement({ id: 'achievement-id', count: 3 });
-
 await GooglePlayGames.showAchievements(); // native UI
+```
+
+#### Incremental achievements
+
+An achievement declared **Incremental** in the Play Console has an "X out of N" step
+count. Two ways to move it, and they are not interchangeable:
+
+```typescript
+// Absolute progress — idempotent. Play ignores a value at or below the stored count,
+// so this is safe to re-send on every launch from a locally derived total.
+const { unlocked } = await GooglePlayGames.setStepsInAchievement({
+  id: 'achievement-id',
+  count: 42,
+});
+
+// Relative progress — NOT idempotent. A retry, a replayed event or a second device
+// counts twice. Use it only for genuine one-shot events.
+await GooglePlayGames.incrementAchievement({ id: 'achievement-id', count: 1 });
+```
+
+`unlocked` tells you whether *this* call is what completed the achievement — that is how
+you know to celebrate, without polling.
+
+Read the server-side state to reconcile (or just to debug a mismatch):
+
+```typescript
+const { achievements, stale } = await GooglePlayGames.loadAchievements({ forceReload: true });
+
+for (const a of achievements) {
+  if (a.type === 'incremental') {
+    console.log(`${a.name}: ${a.currentSteps}/${a.totalSteps} (${a.state})`);
+  }
+}
+
+// Single lookup; rejects with code ACHIEVEMENT_NOT_FOUND on an unknown id.
+const one = await GooglePlayGames.getAchievement({ id: 'achievement-id' });
+```
+
+`currentSteps` / `totalSteps` / `formattedCurrentSteps` / `formattedTotalSteps` are
+present **only** when `type === 'incremental'` — Play throws when they are read on a
+standard achievement, so they are omitted rather than faked with `0`.
+
+#### Write results and failures
+
+Every write (`unlock`, `reveal`, `increment`, `setSteps`) uses the Play Games
+`*Immediate` API by default, so **the promise rejects when the write fails** — no Play
+Games session, an unknown id, or an id configured as *Standard* while the code calls
+`increment`/`setSteps` on it. Previously all of those resolved as a success, which is
+what made an incremental achievement look like it "wasn't supported".
+
+Pass `immediate: false` for the old fire-and-forget behaviour (resolves as soon as the
+call is handed to Play, no `unlocked` reported):
+
+```typescript
+await GooglePlayGames.incrementAchievement({ id: 'achievement-id', count: 1, immediate: false });
 ```
 
 ---

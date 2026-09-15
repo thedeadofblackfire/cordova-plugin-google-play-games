@@ -1,6 +1,9 @@
 import { WebPlugin } from '@capacitor/core';
 
 import type {
+  AchievementInfo,
+  AchievementsResult,
+  AchievementWriteResult,
   AllEventsResult,
   AuthenticationResult,
   EventResult,
@@ -22,16 +25,30 @@ export class GooglePlayGamesWeb extends WebPlugin implements GooglePlayGamesPlug
   login(_options?: LoginOptions): Promise<LoginResult> {
     throw this.unimplemented('Not available on web');
   }
-  unlockAchievement(_options: { id: string }): Promise<void> {
+  unlockAchievement(_options: { id: string; immediate?: boolean }): Promise<AchievementWriteResult> {
     throw this.unimplemented('Not available on web');
   }
-  incrementAchievement(_options: { id: string; count: number }): Promise<void> {
+  incrementAchievement(_options: {
+    id: string;
+    count: number;
+    immediate?: boolean;
+  }): Promise<AchievementWriteResult> {
     throw this.unimplemented('Not available on web');
   }
-  revealAchievement(_options: { id: string }): Promise<void> {
+  revealAchievement(_options: { id: string; immediate?: boolean }): Promise<void> {
     throw this.unimplemented('Not available on web');
   }
-  setStepsInAchievement(_options: { id: string; count: number }): Promise<void> {
+  setStepsInAchievement(_options: {
+    id: string;
+    count: number;
+    immediate?: boolean;
+  }): Promise<AchievementWriteResult> {
+    throw this.unimplemented('Not available on web');
+  }
+  loadAchievements(_options?: { forceReload?: boolean }): Promise<AchievementsResult> {
+    throw this.unimplemented('Not available on web');
+  }
+  getAchievement(_options: { id: string; forceReload?: boolean }): Promise<AchievementInfo> {
     throw this.unimplemented('Not available on web');
   }
   showAchievements(): Promise<void> {

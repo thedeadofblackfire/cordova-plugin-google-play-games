@@ -42,6 +42,8 @@ import com.google.android.gms.games.snapshot.Snapshot;
 import com.google.android.gms.games.snapshot.SnapshotMetadata;
 import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
 import com.google.android.gms.games.stats.PlayerStats;
+import com.google.android.gms.games.achievement.Achievement;
+import com.google.android.gms.games.achievement.AchievementBuffer;
 
 import org.json.JSONException;
 
@@ -166,13 +168,29 @@ public class GooglePlayGames extends Plugin {
 
     // ----------------------- ACHIEVEMENTS -----------------------
 
+    // Play Games exposes every achievement write twice: a fire-and-forget form whose
+    // outcome is dropped on the floor, and an `*Immediate` form returning a Task. These
+    // methods use the Immediate form by default so a failed write reaches the caller
+    // instead of resolving as a success -- no session, an unknown id, or (the trap that
+    // makes incremental achievements look "unsupported") an id configured as STANDARD in
+    // the Play Console while the code calls increment/setSteps on it. Pass
+    // `immediate: false` for the old fire-and-forget behaviour.
+
     @PluginMethod
     public void unlockAchievement(PluginCall call) {
         String id = call.getString("id");
         if (id == null) { call.reject("id is required"); return; }
+        boolean immediate = Boolean.TRUE.equals(call.getBoolean("immediate", true));
         getActivity().runOnUiThread(() -> {
-            PlayGames.getAchievementsClient(getActivity()).unlock(id);
-            call.resolve();
+            AchievementsClient client = PlayGames.getAchievementsClient(getActivity());
+            if (!immediate) {
+                client.unlock(id);
+                call.resolve(new JSObject());
+                return;
+            }
+            client.unlockImmediate(id)
+                .addOnSuccessListener(ignored -> call.resolve(achievementWriteResult(true)))
+                .addOnFailureListener(e -> call.reject(e.getMessage(), e));
         });
     }
 
@@ -181,9 +199,19 @@ public class GooglePlayGames extends Plugin {
         String id = call.getString("id");
         Integer count = call.getInt("count");
         if (id == null || count == null) { call.reject("id and count are required"); return; }
+        // Play ignores a non-positive increment; rejecting is more useful than pretending.
+        if (count < 1) { call.reject("count must be >= 1"); return; }
+        boolean immediate = Boolean.TRUE.equals(call.getBoolean("immediate", true));
         getActivity().runOnUiThread(() -> {
-            PlayGames.getAchievementsClient(getActivity()).increment(id, count);
-            call.resolve();
+            AchievementsClient client = PlayGames.getAchievementsClient(getActivity());
+            if (!immediate) {
+                client.increment(id, count);
+                call.resolve(new JSObject());
+                return;
+            }
+            client.incrementImmediate(id, count)
+                .addOnSuccessListener(unlocked -> call.resolve(achievementWriteResult(Boolean.TRUE.equals(unlocked))))
+                .addOnFailureListener(e -> call.reject(e.getMessage(), e));
         });
     }
 
@@ -191,9 +219,17 @@ public class GooglePlayGames extends Plugin {
     public void revealAchievement(PluginCall call) {
         String id = call.getString("id");
         if (id == null) { call.reject("id is required"); return; }
+        boolean immediate = Boolean.TRUE.equals(call.getBoolean("immediate", true));
         getActivity().runOnUiThread(() -> {
-            PlayGames.getAchievementsClient(getActivity()).reveal(id);
-            call.resolve();
+            AchievementsClient client = PlayGames.getAchievementsClient(getActivity());
+            if (!immediate) {
+                client.reveal(id);
+                call.resolve();
+                return;
+            }
+            client.revealImmediate(id)
+                .addOnSuccessListener(ignored -> call.resolve())
+                .addOnFailureListener(e -> call.reject(e.getMessage(), e));
         });
     }
 
@@ -202,25 +238,134 @@ public class GooglePlayGames extends Plugin {
         String id = call.getString("id");
         Integer count = call.getInt("count");
         if (id == null || count == null) { call.reject("id and count are required"); return; }
+        if (count < 0) { call.reject("count must be >= 0"); return; }
+        boolean immediate = Boolean.TRUE.equals(call.getBoolean("immediate", true));
         getActivity().runOnUiThread(() -> {
-            PlayGames.getAchievementsClient(getActivity()).setSteps(id, count);
-            call.resolve();
+            AchievementsClient client = PlayGames.getAchievementsClient(getActivity());
+            if (!immediate) {
+                client.setSteps(id, count);
+                call.resolve(new JSObject());
+                return;
+            }
+            client.setStepsImmediate(id, count)
+                .addOnSuccessListener(unlocked -> call.resolve(achievementWriteResult(Boolean.TRUE.equals(unlocked))))
+                .addOnFailureListener(e -> call.reject(e.getMessage(), e));
         });
+    }
+
+    @PluginMethod
+    public void loadAchievements(PluginCall call) {
+        boolean forceReload = Boolean.TRUE.equals(call.getBoolean("forceReload", false));
+        getActivity().runOnUiThread(() ->
+            PlayGames.getAchievementsClient(getActivity()).load(forceReload)
+                .addOnSuccessListener(data -> {
+                    JSArray achievements = new JSArray();
+                    AchievementBuffer buffer = data.get();
+                    if (buffer != null) {
+                        try {
+                            for (Achievement achievement : buffer) {
+                                achievements.put(buildAchievementObject(achievement));
+                            }
+                        } finally {
+                            buffer.release();
+                        }
+                    }
+                    JSObject result = new JSObject();
+                    result.put("achievements", achievements);
+                    result.put("stale", data.isStale());
+                    call.resolve(result);
+                })
+                .addOnFailureListener(e -> call.reject(e.getMessage(), e)));
+    }
+
+    @PluginMethod
+    public void getAchievement(PluginCall call) {
+        String id = call.getString("id");
+        if (id == null) { call.reject("id is required"); return; }
+        boolean forceReload = Boolean.TRUE.equals(call.getBoolean("forceReload", false));
+        getActivity().runOnUiThread(() ->
+            PlayGames.getAchievementsClient(getActivity()).load(forceReload)
+                .addOnSuccessListener(data -> {
+                    JSObject match = null;
+                    AchievementBuffer buffer = data.get();
+                    if (buffer != null) {
+                        try {
+                            for (Achievement achievement : buffer) {
+                                if (id.equals(achievement.getAchievementId())) {
+                                    match = buildAchievementObject(achievement);
+                                    break;
+                                }
+                            }
+                        } finally {
+                            buffer.release();
+                        }
+                    }
+                    if (match == null) { call.reject("Achievement not found: " + id, "ACHIEVEMENT_NOT_FOUND"); return; }
+                    match.put("stale", data.isStale());
+                    call.resolve(match);
+                })
+                .addOnFailureListener(e -> call.reject(e.getMessage(), e)));
     }
 
     @PluginMethod
     public void showAchievements(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             AchievementsClient client = PlayGames.getAchievementsClient(getActivity());
-            client.load(true).addOnSuccessListener(data ->
-                client.getAchievementsIntent().addOnSuccessListener(intent ->
-                    startActivityForResult(call, intent, "achievementsCallback")));
+            // Every branch has to settle the call: without the failure listeners, a load
+            // or intent error left the PluginCall unresolved, i.e. a JS promise pending
+            // for the rest of the session.
+            client.load(true)
+                .addOnSuccessListener(data -> {
+                    if (data.get() != null) data.get().release();
+                    client.getAchievementsIntent()
+                        .addOnSuccessListener(intent -> startActivityForResult(call, intent, "achievementsCallback"))
+                        .addOnFailureListener(e -> call.reject(e.getMessage(), e));
+                })
+                .addOnFailureListener(e -> call.reject(e.getMessage(), e));
         });
     }
 
     @ActivityCallback
     private void achievementsCallback(PluginCall call, ActivityResult result) {
         if (call != null) call.resolve();
+    }
+
+    private JSObject achievementWriteResult(boolean unlocked) {
+        JSObject result = new JSObject();
+        result.put("unlocked", unlocked);
+        return result;
+    }
+
+    private JSObject buildAchievementObject(Achievement achievement) {
+        JSObject obj = new JSObject();
+        obj.put("id", achievement.getAchievementId());
+        obj.put("name", achievement.getName());
+        obj.put("description", achievement.getDescription());
+        boolean incremental = achievement.getType() == Achievement.TYPE_INCREMENTAL;
+        obj.put("type", incremental ? "incremental" : "standard");
+        obj.put("state", achievementStateName(achievement.getState()));
+        obj.put("xpValue", achievement.getXpValue());
+        obj.put("lastUpdatedTimestamp", achievement.getLastUpdatedTimestamp());
+        obj.put("revealedImageUri", achievement.getRevealedImageUri() != null ? achievement.getRevealedImageUri().toString() : null);
+        obj.put("unlockedImageUri", achievement.getUnlockedImageUri() != null ? achievement.getUnlockedImageUri().toString() : null);
+        // getCurrentSteps()/getTotalSteps() throw IllegalStateException on a STANDARD
+        // achievement -- they may only ever be read behind this type check.
+        if (incremental) {
+            obj.put("currentSteps", achievement.getCurrentSteps());
+            obj.put("totalSteps", achievement.getTotalSteps());
+            obj.put("formattedCurrentSteps", achievement.getFormattedCurrentSteps());
+            obj.put("formattedTotalSteps", achievement.getFormattedTotalSteps());
+        }
+        return obj;
+    }
+
+    private String achievementStateName(int state) {
+        switch (state) {
+            case Achievement.STATE_UNLOCKED: return "unlocked";
+            case Achievement.STATE_REVEALED: return "revealed";
+            case Achievement.STATE_HIDDEN: return "hidden";
+            default: return "unknown";
+        }
     }
 
     // ----------------------- LEADERBOARDS -----------------------
